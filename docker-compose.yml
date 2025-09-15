@@ -10,7 +10,6 @@ services:
       - '8888:8888'
       - '8889:8889'
       - '8890:8890'
-      # Add any other ports you need
     volumes:
       - $PWD/conf:/conf:ro
     command: /conf/mediamtx.yml

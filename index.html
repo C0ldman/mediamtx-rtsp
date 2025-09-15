@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MediaMTX WebRTC Player</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #f4f4f4;
+        padding: 2em;
+      }
+      #container {
+        background: #fff;
+        padding: 2em;
+        border-radius: 8px;
+        max-width: 500px;
+        margin: auto;
+        box-shadow: 0 2px 8px #0001;
+      }
+      input[type='text'] {
+        width: 100%;
+        padding: 0.5em;
+        margin-bottom: 1em;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      button {
+        padding: 0.5em 1.5em;
+        border: none;
+        background: #007bff;
+        color: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #aaa;
+      }
+      video {
+        width: 100%;
+        margin-top: 1em;
+        background: #000;
+        border-radius: 4px;
+      }
+      .error {
+        color: #c00;
+        margin-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <h2>MediaMTX WebRTC Player (WHEP)</h2>
+      <label for="whepUrl">WHEP URL:</label>
+      <input type="text" id="whepUrl" value="http://localhost:8889/mystream/whep" />
+      <label for="username">Username:</label>
+      <input type="text" id="username" placeholder="Enter username" value="username" />
+      <label for="password">Password:</label>
+      <input type="password" id="password" placeholder="Enter password" value="userpass"/>
+      <button id="playBtn">Play</button>
+      <div class="error" id="error"></div>
+      <video id="video" autoplay playsinline controls muted></video>
+    </div>
+    <script>
+      // Minimal WHEP client for MediaMTX
+      document.getElementById('playBtn').onclick = async function () {
+        const url = document.getElementById('whepUrl').value;
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        const video = document.getElementById('video');
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = '';
+        this.disabled = true;
+        video.srcObject = null;
+        try {
+          const pc = new RTCPeerConnection();
+          pc.ontrack = event => {
+            video.srcObject = event.streams[0];
+          };
+          // Create offer
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          // Prepare headers
+          const headers = {'Content-Type': 'application/sdp'};
+          if (user && pass) {
+            headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
+          }
+          // Send offer to WHEP endpoint
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: offer.sdp
+          });
+          if (!resp.ok) throw new Error('WHEP server error: ' + resp.status);
+          const answerSDP = await resp.text();
+          await pc.setRemoteDescription({type: 'answer', sdp: answerSDP});
+        } catch (err) {
+          errorDiv.textContent = err.message;
+        } finally {
+          this.disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>

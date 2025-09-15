@@ -1,0 +1,3 @@
+ffmpeg -re -stream_loop -1 -i ./PICT0083.AVI -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -f rtsp rtsp://username:userpass@localhost:8554/mystream
+
+ffmpeg -re -stream_loop -1 -i ./PICT0083.AVI -c:v libx264 -preset ultrafast -tune zerolatency -profile:v main -pix_fmt yuv420p -c:a libopus -ar 44100 -ac 1 -b:a 64k -rtsp_transport tcp -f rtsp rtsp://username:userpass@localhost:8554/mystream
